@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "backend"
+version = "0.1.0"
+description = ""
+authors = ["VN"]
+readme = "README.md"
+
+# TODO: Remove unused dependencies
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+llama-index = "^0.11.21"
+fastapi = {extras = ["all"], version = "^0.115.4"}
+uvicorn = "^0.32.0"
+qdrant-client = "^1.12.1"
+llama-index-vector-stores-qdrant = "^0.3.3"
+fastembed = "^0.4.1"
+llama-index-embeddings-fastembed = "^0.2.0"
+onnxruntime = "1.19.2"
+llama-index-llms-nvidia = "^0.2.6"
+motor = "^3.6.0"
+llama-index-readers-web = "^0.2.4"
+unstructured = "^0.16.4"
+llama-index-embeddings-nvidia = "^0.2.4"
+aiofiles = "^24.1.0"
+pandas = "^2.2.3"
+openpyxl = "^3.1.5"
+python-docx = "^1.1.2"
+mammoth = "^1.8.0"
+llama-index-readers-json = "^0.2.0"
+docx2txt = "^0.8"
+llama-index-storage-chat-store-redis = "^0.3.2"
+crawl4ai = "^0.3.73"
+playwright = "^1.42.0"
+pymupdf = "1.23.7"  # Changed from ^1.23.8 to 1.23.7
+python-pptx = "0.6.21"  # Changed from ^0.6.24 to 0.6.21
+torch = "^2.2.1"  # Add PyTorch
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

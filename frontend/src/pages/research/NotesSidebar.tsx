@@ -1,51 +1,107 @@
-import { NoteItem } from "./NoteItem";
+import { debounce } from "lodash-es";
+import { useCallback, useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { api } from "../../api";
+import { useNotes } from "../../context/NotesContext";
+import { Note } from "../../types";
+import { NoteItem } from "./components/NoteItem";
+import { ViewNoteModal } from "./components/ViewNoteModal";
 
 export const NotesSidebar = () => {
-  const notes = [
-    {
-      title: "Noteworthy technology acquisitions 2021",
-      content:
-        "Here are the biggest enterprise technology acquisitions of 2021 so far, in reverse chronological order.",
-    },
-    {
-      title: "Meeting Notes",
-      content:
-        "Discussion about Q4 planning and strategic initiatives for the upcoming year...",
-    },
-    {
-      title: "Project Ideas",
-      content:
-        "1. Build a task management app\n2. Create a recipe collection tool\n3. Design a personal finance tracker...",
-    },
-  ];
+  const { id: researchId } = useParams<{ id: string }>();
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { refreshTrigger } = useNotes();
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+
+  const debouncedSearch = useCallback((query: string) => {
+    debounce(() => {
+      setSearchQuery(query);
+    }, 300)();
+  }, []);
+
+  useEffect(() => {
+    const fetchNotes = async () => {
+      if (!researchId) return;
+
+      try {
+        setIsLoading(true);
+        const fetchedNotes = await api.getNotes(researchId);
+        setNotes(fetchedNotes);
+      } catch (error) {
+        console.error("Error fetching notes:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchNotes();
+  }, [researchId, refreshTrigger]);
+
+  const handleDelete = async (note: Note) => {
+    if (!researchId) return;
+
+    try {
+      await api.deleteNote(researchId, note.id);
+      setNotes(notes.filter((n) => n.id !== note.id));
+    } catch (error) {
+      console.error("Error deleting note:", error);
+    }
+  };
+
+  const filteredNotes = notes.filter(
+    (note) =>
+      note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      note.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="flex flex-col h-full max-w-xs md:max-w-md lg:max-w-lg shadow-lg">
-      <div className="flex items-center gap-2 p-4 border-b border-gray-800 sticky top-0 z-10">
-        <div className="flex flex-col gap-3 w-full">
-          <h2 className="text-xl font-semibold">Saved Notes</h2>
-          <input
-            type="text"
-            placeholder="Search..."
-            className="p-2 rounded-lg bg-gray-700  placeholder-gray-500 mb-1"
-          />
-        </div>
+    <div className="w-96 h-full flex flex-col">
+      <div className="p-4 space-y-3">
+        <h2 className="font-medium text-gray-400">Saved Notes</h2>
+
+        <input
+          type="text"
+          placeholder="Search notes..."
+          className="input input-sm w-full p-2"
+          onChange={(e) => debouncedSearch(e.target.value)}
+          defaultValue={searchQuery}
+        />
       </div>
 
-      <div className="flex flex-col flex-grow p-4">
-        <div className="flex flex-col flex-grow overflow-y-auto">
+      <div className="flex-1 overflow-y-auto px-4 pb-4 custom-scrollbar">
+        {isLoading ? (
+          <div className="text-center text-gray-400 mt-4">Loading notes...</div>
+        ) : filteredNotes.length === 0 ? (
+          <div className="text-center text-gray-500 text-sm mt-4">
+            {searchQuery ? "No matching notes found" : "No notes yet"}
+          </div>
+        ) : (
           <div className="space-y-2">
-            {notes.map((note, index) => (
+            {filteredNotes.map((note, index) => (
               <NoteItem
                 key={index}
                 note={note}
-                index={index}
-                onDelete={() => {}}
+                onDelete={() => handleDelete(note)}
+                onClick={() => {
+                  setSelectedNote(note);
+                  setIsViewModalOpen(true);
+                }}
               />
             ))}
           </div>
-        </div>
+        )}
       </div>
+      <ViewNoteModal
+        isOpen={isViewModalOpen}
+        onClose={() => {
+          setIsViewModalOpen(false);
+          setSelectedNote(null);
+        }}
+        note={selectedNote}
+      />
     </div>
   );
 };
